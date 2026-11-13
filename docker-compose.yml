@@ -1,0 +1,37 @@
+# Local PostgreSQL 16 with pgvector. Scripts in /docker-entrypoint-initdb.d run
+# once, in filename order, the first time the volume is created.
+# Start:  docker compose --env-file .env.local up -d
+# Reset everything:  docker compose --env-file .env.local down -v   (then start again)
+# Host port is 5433 because a locally installed PostgreSQL usually owns 5432.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: semdoc-db
+    env_file: .env.local
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - semdoc_pgdata:/var/lib/postgresql/data
+      - ./db/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./db/02_alter.sql:/docker-entrypoint-initdb.d/02_alter.sql:ro
+      - ./db/03_indexes.sql:/docker-entrypoint-initdb.d/03_indexes.sql:ro
+      - ./db/04_views.sql:/docker-entrypoint-initdb.d/04_views.sql:ro
+      - ./db/05_functions_triggers.sql:/docker-entrypoint-initdb.d/05_functions_triggers.sql:ro
+      - ./db/06_seed.sql:/docker-entrypoint-initdb.d/06_seed.sql:ro
+      # Dev only: stand-in embeddings so queries.sql works before the app exists.
+      # Remove this line once the app generates real MiniLM embeddings.
+      - ./db/dev/07_dev_embeddings.sql:/docker-entrypoint-initdb.d/07_dev_embeddings.sql:ro
+      - ./db/initdb/10_app_user.sh:/docker-entrypoint-initdb.d/10_app_user.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  semdoc_pgdata:

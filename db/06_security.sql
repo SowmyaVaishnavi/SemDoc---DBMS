@@ -1,0 +1,13 @@
+-- =====================================================================
+-- 06  SECURITY  (least-privilege application user)
+--     The app connects as app_user: no DROP, no ALTER, no CREATE.
+--     Create the role once, with the password taken from your
+--     environment, never typed into a committed file:
+--         CREATE ROLE app_user LOGIN PASSWORD '<from .env.local>';
+-- =====================================================================
+
+-- GRANT CONNECT ON DATABASE <your_db> TO app_user;
+-- GRANT USAGE ON SCHEMA public TO app_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
+-- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
+-- GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO app_user;
